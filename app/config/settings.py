@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     OPENAI_IMAGE_BACKGROUND: str = "auto"
     OPENAI_IMAGE_OUTPUT_FORMAT: str = "b64_json"  # "b64_json" or "url"
 
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str
+    AWS_S3_BUCKET_NAME: str
+    AWS_REGION: str = "ap-northeast-2"
+
     # SQLAlchemy 용 접속 문자열 (asyncpg)
     @property
     def database_url_async(self) -> str:
