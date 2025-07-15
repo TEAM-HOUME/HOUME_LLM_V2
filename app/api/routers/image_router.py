@@ -12,11 +12,14 @@ from app.services.image_service import build_and_generate_image
 
 router = APIRouter(prefix="/images", tags=["Image"])   # ← 중복 import 제거
 
+class PromptFurnitureListDTO(BaseModel):
+    furnitureIds: conlist(int, min_length=1)
+
 class ImageRequest(BaseModel):
-    floor_plan_id: int
+    floorPlanId: int
+    tasteId: int
     equilibrium: Equilibrium
-    taste_id: int
-    furniture_ids: conlist(int, min_length=1)            # ← v1: min_items
+    promptFurnitureListDTO: PromptFurnitureListDTO        # ← v1: min_items
 
 @router.post("/", response_class=StreamingResponse)
 async def create_image(
@@ -25,8 +28,8 @@ async def create_image(
 ) -> StreamingResponse:
     return await build_and_generate_image(
         db=db,
-        floor_plan_id=body.floor_plan_id,
+        floor_plan_id=body.floorPlanId,
         equilibrium=body.equilibrium,
-        taste_id=body.taste_id,
-        furniture_ids=body.furniture_ids,
+        taste_id=body.tasteId,
+        furniture_ids=body.promptFurnitureListDTO.furnitureIds,
     )
