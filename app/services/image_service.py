@@ -28,7 +28,6 @@ async def generate_image_direct(prompt: str) -> StreamingResponse:
         "quality":    settings.OPENAI_IMAGE_QUALITY,    # "medium"
         "background": settings.OPENAI_IMAGE_BACKGROUND, # "auto"
         # output-format 이 "b64_json" 이면 base64로, "url" 이면 링크로
-        "response_format": settings.OPENAI_IMAGE_OUTPUT_FORMAT,
     }
 
     headers = {
