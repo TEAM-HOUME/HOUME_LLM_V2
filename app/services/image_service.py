@@ -1,6 +1,6 @@
 # app/services/image_service.py
 from __future__ import annotations
-import base64, logging, httpx
+import base64, logging, httpx, uuid
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from fastapi import HTTPException
@@ -11,9 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.enums import Equilibrium
 from typing import Sequence
 
+from app.libs.s3 import upload_image_to_s3
+
 logger = logging.getLogger(__name__)
 
-async def generate_image_direct(prompt: str) -> StreamingResponse:
+async def generate_image_and_upload(prompt: str) -> dict:
     """
     RAG 없이, prompt 그대로 DALL·E(or internal) 호출 → PNG 스트림 반환
     """
@@ -48,6 +50,11 @@ async def generate_image_direct(prompt: str) -> StreamingResponse:
     if settings.OPENAI_IMAGE_OUTPUT_FORMAT == "b64_json":
         b64_png = data["b64_json"]
         png_bytes = base64.b64decode(b64_png)
+
+        uid = uuid.uuid4()
+        filename = f"generated/{uid}.png"
+        original_filename = f"{uid}.png"
+        content_type = "image/png"
     else:
         # data["url"] 에서 직접 fetch
         img_url   = data["url"]
@@ -56,7 +63,17 @@ async def generate_image_direct(prompt: str) -> StreamingResponse:
             img_res.raise_for_status()
             png_bytes = img_res.content
 
-    return StreamingResponse(BytesIO(png_bytes), media_type="image/png")
+    s3_url = upload_image_to_s3(png_bytes, content_type)
+
+    logger.info("✅ S3 업로드 성공 → %s", s3_url)
+
+    return {
+        "filename": filename,
+        "originalFilename": original_filename,
+        "imageLink": s3_url,
+        "contentType": content_type,
+        "pullPrompt": prompt  # setter 가능한 필드
+    }
 
 
 async def build_and_generate_image(
@@ -65,10 +82,9 @@ async def build_and_generate_image(
     equilibrium: Equilibrium,
     taste_id: int,
     furniture_ids: Sequence[int],
-) -> StreamingResponse:
+) -> dict:
     """
-    1) DB에서 프롬프트 4종 합성 → final_prompt
-    2) 곧장 DALL·E(or internal) 호출 → PNG 스트림 반환
+    DB에서 프롬프트 합성 → 이미지 생성 + 업로드 → 응답 DTO
     """
     final_prompt = await build_prompt(
         db=db,
@@ -79,4 +95,4 @@ async def build_and_generate_image(
     )
     logger.info("📝 최종 Prompt →\n%s", final_prompt)
 
-    return await generate_image_direct(final_prompt)
+    return await generate_image_and_upload(final_prompt)
