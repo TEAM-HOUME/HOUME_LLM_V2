@@ -15,7 +15,7 @@ class PromptFurnitureListDTO(BaseModel):
 
 class PromptReq(BaseModel):
     floorPlanId: int
-    tasteId: int
+    tagId: int
     equilibrium: Equilibrium
     promptFurnitureListDTO: PromptFurnitureListDTO
 
@@ -26,7 +26,7 @@ async def compose_prompt(req: PromptReq, db: AsyncSession = Depends(get_db)):
         db=db,
         floor_plan_id=req.floorPlanId,
         equilibrium=req.equilibrium,
-        taste_id=req.tasteId,
-        furniture_ids=req.promptFurnitureListDTO.furnitureIds,
+        tag_id=req.tagId,
+        furniture_tag_ids=req.promptFurnitureListDTO.furnitureIds,
     )
     return {"prompt": prompt}

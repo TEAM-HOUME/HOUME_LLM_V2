@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "houme"
+    POSTGRES_DB: str = "postgres"
 
     EMBED_DIM: int = 1536
 

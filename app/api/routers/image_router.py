@@ -14,24 +14,23 @@ from app.services.image_service import build_image_chain
 router = APIRouter(prefix="/images", tags=["Image"])   # ← 중복 import 제거
 
 class PromptFurnitureListDTO(BaseModel):
-    furnitureIds: conlist(int, min_length=1)
+    furnitureTagIds: conlist(int, min_length=1)  # ← 변경됨
 
-# 요청 DTO
 class ImageRequest(BaseModel):
     floorPlanId: int
-    tasteId: int
+    tagId: int                                   # ← tasteId → tagId
     equilibrium: Equilibrium
-    promptFurnitureListDTO: PromptFurnitureListDTO        # ← v1: min_items
+    promptFurnitureListDTO: PromptFurnitureListDTO
 
 @router.post("", response_class=JSONResponse)
 async def create_image(
     body: ImageRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    return await build_image_chain(  # image_service의 함수 호출
+    return await build_image_chain(
         db=db,
         floor_plan_id=body.floorPlanId,
         equilibrium=body.equilibrium,
-        taste_id=body.tasteId,
-        furniture_ids=body.promptFurnitureListDTO.furnitureIds,
+        tag_id=body.tagId,  # ← taste_id → tag_id
+        furniture_tag_ids=body.promptFurnitureListDTO.furnitureTagIds  # ←
     )

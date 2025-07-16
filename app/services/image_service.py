@@ -161,16 +161,16 @@ async def build_image_chain(
     db: AsyncSession,
     floor_plan_id: int,
     equilibrium: Equilibrium,
-    taste_id: int,
-    furniture_ids: Sequence[int],
+    tag_id: int,
+    furniture_tag_ids: Sequence[int],
 ) -> dict:
     # Step 1: DB 기반 프롬프트 생성
     prompt = await build_prompt(
         db=db,
         floor_plan_id=floor_plan_id,
         equilibrium=equilibrium,
-        taste_id=taste_id,
-        furniture_ids=furniture_ids,
+        tag_id=tag_id,
+        furniture_tag_ids=furniture_tag_ids,
     )
 
     # Step 2: LangChain-style chain 구성
@@ -180,3 +180,4 @@ async def build_image_chain(
     )
 
     return await chain.ainvoke(prompt)
+
