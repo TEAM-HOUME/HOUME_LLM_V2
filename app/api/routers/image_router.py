@@ -16,6 +16,7 @@ router = APIRouter(prefix="/images", tags=["Image"])   # ← 중복 import 제�
 class PromptFurnitureListDTO(BaseModel):
     furnitureIds: conlist(int, min_length=1)
 
+# 요청 DTO
 class ImageRequest(BaseModel):
     floorPlanId: int
     tasteId: int
@@ -27,7 +28,7 @@ async def create_image(
     body: ImageRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    return await build_and_generate_image(
+    return await build_and_generate_image(  # image_service의 함수 호출
         db=db,
         floor_plan_id=body.floorPlanId,
         equilibrium=body.equilibrium,
