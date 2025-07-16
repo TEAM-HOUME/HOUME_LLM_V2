@@ -30,15 +30,15 @@ logger = logging.getLogger(__name__)
 # ────────────────────────────────────────────────────────────────
 PROMPT_TMPL = PromptTemplate(
     input_variables=[
-        "floor_plan_prompt",     # ① 도면 설명
-        "equilibrium_prompt",    # ② 평형(면적) 설명
-        "taste_prompt",          # ③ 취향(무드보드) 설명
-        "furniture_prompt",      # ④ 가구 설명(여러 줄)
+        "floor_plan_prompt",
+        "equilibrium_prompt",
+        "tag_prompt",             # ✅ 수정
+        "furniture_prompt"
     ],
     template=(
         "{floor_plan_prompt}\n"
         "{equilibrium_prompt}\n"
-        "{taste_prompt}\n"
+        "{tag_prompt}\n"          # ✅ 템플릿 안도 같이 수정
         "{furniture_prompt}"
     ),
 )
@@ -53,8 +53,8 @@ async def build_prompt(
     db: AsyncSession,
     floor_plan_id: int,
     equilibrium: Equilibrium,
-    taste_id: int,
-    furniture_ids: Sequence[int],
+    tag_id: int,
+    furniture_tag_ids: Sequence[int],
 ) -> str:
     """
     Args
@@ -78,45 +78,44 @@ async def build_prompt(
 
     # ── (1) Automap 클래스 – 테이블명 → CamelCase 로 변환된 이름
     FloorPlan = AutomapBase.classes.FloorPlan
-    Taste     = AutomapBase.classes.Taste
-    Furniture = AutomapBase.classes.Furniture
+    Tag = AutomapBase.classes.Tag
+    FurnitureTag = AutomapBase.classes.FurnitureTag
 
-    # ── (2) FloorPlan 프롬프트 ───────────────────────────────
+    # ① FloorPlan
     fp_prompt: str = (
-        await db.scalar(
-            select(FloorPlan.floor_plan_prompt).where(FloorPlan.id == floor_plan_id)
-        )
-        or "도면 프롬프트가 존재하지 않습니다"
+            await db.scalar(
+                select(FloorPlan.floor_plan_prompt).where(FloorPlan.id == floor_plan_id)
+            )
+            or "도면 프롬프트가 존재하지 않습니다"
     )
-    logger.info("[Prompt] FloorPlan %s → %s", floor_plan_id, fp_prompt)
 
-    # ── (3) Taste 프롬프트 ─────────────────────────────────
-    taste_prompt: str = (
-        await db.scalar(
-            select(Taste.taste_prompt).where(Taste.id == taste_id)
-        )
-        or "무드보드 프롬프트가 존재하지 않습니다"
+    # ② Tag (기존 Taste)
+    tag_prompt: str = (
+            await db.scalar(
+                select(Tag.tag_prompt).where(Tag.id == tag_id)
+            )
+            or "태그 프롬프트가 존재하지 않습니다"
     )
-    logger.info("[Prompt] Taste %s → %s", taste_id, taste_prompt)
 
-    # ── (4) Furniture 프롬프트(다중) ───────────────────────
+    # ③ FurnitureTag (기존 Furniture)
     stmt = (
-        select(Furniture.furniture_prompt)
-        .where(Furniture.id.in_(furniture_ids))
-        .order_by(Furniture.id.asc())
+        select(FurnitureTag.furniture_prompt)
+        .where(FurnitureTag.id.in_(furniture_tag_ids))
+        .order_by(FurnitureTag.id.asc())
     )
-    furniture_rows: list[str] = (await db.execute(stmt)).scalars().all()
-    furniture_prompt = "\n".join(furniture_rows)  # 줄바꿈으로 합치기
-    logger.info("[Prompt] Furniture %s →\n%s", furniture_ids, furniture_prompt)
 
-    # ── (5) LangChain 템플릿 합성 ──────────────────────────
+
+    furniture_tag_rows: list[str] = (await db.execute(stmt)).scalars().all()
+    furniture_prompt = "\n".join(furniture_tag_rows)
+    logger.info("[Prompt] FurnitureTags %s →\n%s", furniture_tag_ids, furniture_prompt)
+
+    # ④ 최종 프롬프트 LangChain 합성
     final_prompt: str = PROMPT_TMPL.format(
         floor_plan_prompt=fp_prompt,
         equilibrium_prompt=equilibrium.value,
-        taste_prompt=taste_prompt,
+        tag_prompt=tag_prompt,  # ✅ taste_prompt → tag_prompt
         furniture_prompt=furniture_prompt,
     )
     logger.info("🟢 [Prompt] FINAL\n%s", final_prompt)
 
-    # ── (6) 완성 프롬프트 반환 ─────────────────────────────
     return final_prompt

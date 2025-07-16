@@ -64,9 +64,8 @@ async def on_startup() -> None:
 
     # DB에 있는 테이블들을 SQLAlchemy ORM 모델로 자동 매핑
     await init_automap(engine)
-
-    logger.info("Automap reflection complete – tables: %s",
-                list(AutomapBase.classes.keys()))
+    logger.info("Automap reflection complete – tables: %s", list(AutomapBase.classes.keys()))
+    print("[DEBUG] 자동 매핑된 클래스:", list(AutomapBase.classes.keys()))
 
 # ──────────────────────────
 # 4) API 라우터 등록
