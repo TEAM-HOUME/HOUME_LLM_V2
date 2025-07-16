@@ -21,6 +21,7 @@ from pgvector.sqlalchemy import Vector
 from app.db.session import engine, get_db
 from app.db.automap import AutomapBase, init_automap
 from app.api.routers import image_router
+from app.api import prompt
 
 # ──────────────────────────
 # 0) 로깅 기본 설정
@@ -71,6 +72,7 @@ async def on_startup() -> None:
 # 4) API 라우터 등록
 # ──────────────────────────
 app.include_router(image_router.router)  # POST /images
+app.include_router(prompt.router)
 
 # ──────────────────────────
 # 5) 데모 엔드포인트 (users)
