@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 PROMPT_TMPL = PromptTemplate(
     input_variables=[
         "floor_plan_prompt",
-        "equilibrium_prompt",
+        # "equilibrium_prompt",
         "tag_prompt",             # ✅ 수정
         "furniture_prompt"
     ],
     template=(
         "{floor_plan_prompt}\n"
-        "{equilibrium_prompt}\n"
+        # "{equilibrium_prompt}\n"
         "{tag_prompt}\n"          # ✅ 템플릿 안도 같이 수정
         "{furniture_prompt}"
     ),
@@ -119,7 +119,7 @@ async def build_prompt(
     # ④ 최종 프롬프트 LangChain 합성
     final_prompt: str = PROMPT_TMPL.format(
         floor_plan_prompt=fp_prompt_with_equilibrium,
-        equilibrium_prompt=equilibrium.value,
+        # equilibrium_prompt=equilibrium.value,
         tag_prompt=tag_prompt,  # ✅ taste_prompt → tag_prompt
         furniture_prompt=furniture_prompt,
     )
