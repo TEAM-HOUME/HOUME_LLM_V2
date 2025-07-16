@@ -10,14 +10,12 @@ class Equilibrium(str, Enum):
     BETWEEN_11_15 = "BETWEEN_11_15"
     OVER_16      = "OVER_16"
 
-    _DESCRIPTIONS = {
-        UNDER_5: "5평 이하",
-        BETWEEN_6_10: "6~10평",
-        BETWEEN_11_15: "11~15평",
-        OVER_16: "16평 이상",
-    }
-
     @property
     def description(self) -> str:
-        """Java enum.getDescription() 과 동일한 역할"""
-        return self._DESCRIPTIONS[self]
+        descriptions = {
+            "UNDER_5": "5-pyeong (≈ 16.53 m²)",
+            "BETWEEN_6_10": "10-pyeong (≈ 33.06 m²)",
+            "BETWEEN_11_15": "15-pyeong (≈ 49.59 m²)",
+            "OVER_16": "20-pyeong (≈ 66.12 m²)",
+        }
+        return descriptions[self.value]

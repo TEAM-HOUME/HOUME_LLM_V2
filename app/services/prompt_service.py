@@ -89,6 +89,13 @@ async def build_prompt(
             or "도면 프롬프트가 존재하지 않습니다"
     )
 
+    # 평형 프롬프트 템플릿에 추가
+    # 1. LangChain 템플릿 생성
+    template = PromptTemplate.from_template(fp_prompt)
+
+    # 2. 변수 대입 (input이라는 이름으로)
+    fp_prompt_with_equilibrium = template.format(input=equilibrium.description)
+
     # ② Tag (기존 Taste)
     tag_prompt: str = (
             await db.scalar(
@@ -111,7 +118,7 @@ async def build_prompt(
 
     # ④ 최종 프롬프트 LangChain 합성
     final_prompt: str = PROMPT_TMPL.format(
-        floor_plan_prompt=fp_prompt,
+        floor_plan_prompt=fp_prompt_with_equilibrium,
         equilibrium_prompt=equilibrium.value,
         tag_prompt=tag_prompt,  # ✅ taste_prompt → tag_prompt
         furniture_prompt=furniture_prompt,
