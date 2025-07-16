@@ -20,7 +20,6 @@ from pgvector.sqlalchemy import Vector
 
 from app.db.session import engine, get_db
 from app.db.automap import AutomapBase, init_automap
-from app.api.v1_prompt import router as prompt_router
 from app.api.routers import image_router
 
 # ──────────────────────────
@@ -28,7 +27,7 @@ from app.api.routers import image_router
 #    (uvicorn 자체 로거 제외 전역)
 # ──────────────────────────
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.INFO,  # INFO 이상의 로그만 출력
     format="%(asctime)s | %(levelname)-7s | %(name)s:%(lineno)d - %(message)s",
 )
 logger = logging.getLogger(__name__)
@@ -54,38 +53,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(image_router.router)
-
-app.include_router(image_router.router)
-
 # ──────────────────────────
 # 3) Startup : pgvector + Automap
 # ──────────────────────────
 @app.on_event("startup")
 async def on_startup() -> None:
-    # pgvector 타입을 SQLAlchemy 메타에 등록
+    # PostgreSQL에서 vector 타입을 SQLAlchemy가 인식할 수 있도록 등록
     ischema_names["vector"] = Vector
 
-    # Automap reflection (async → sync 컨텍스트 내부 처리)
+    # DB에 있는 테이블들을 SQLAlchemy ORM 모델로 자동 매핑
     await init_automap(engine)
 
-    logger.info("✅ Automap reflection complete – tables: %s",
+    logger.info("Automap reflection complete – tables: %s",
                 list(AutomapBase.classes.keys()))
 
 # ──────────────────────────
 # 4) API 라우터 등록
 # ──────────────────────────
-app.include_router(prompt_router)   # POST /prompts/compose
+app.include_router(image_router.router)  # POST /images
 
 # ──────────────────────────
 # 5) 데모 엔드포인트 (users)
 # ──────────────────────────
 @app.get("/users", tags=["User"], summary="전체 사용자 조회")
-async def get_users(db: AsyncSession = Depends(get_db)):
+async def get_users(db: AsyncSession = Depends(get_db)):  # 비동기 세션을 가져오는 의존성 주입
     """users 테이블 전체 행을 반환"""
     User = AutomapBase.classes.users
     rows = (await db.execute(select(User))).scalars().all()
-    return [dict(r.__dict__) for r in rows]
+    return [dict(r.__dict__) for r in rows]  # __dict__로 JSON 응답 포맷 변환
 
 
 @app.get("/user-ids", tags=["User"], summary="사용자 PK 목록")

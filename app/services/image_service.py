@@ -15,6 +15,7 @@ from app.libs.s3 import upload_image_to_s3
 
 logger = logging.getLogger(__name__)
 
+# 프롬프트를 받아서 -> 이미지 생성, S3에 업로드, S3 URL을 포함한 이미지 메타데이터 반환
 async def generate_image_and_upload(prompt: str) -> dict:
     """
     RAG 없이, prompt 그대로 DALL·E(or internal) 호출 → PNG 스트림 반환
@@ -36,6 +37,7 @@ async def generate_image_and_upload(prompt: str) -> dict:
         "Authorization": f"Bearer {settings.OPENAI_API_KEY}"
     }
 
+    # OpenAI 이미지 생성 호출
     async with httpx.AsyncClient(timeout=httpx.Timeout(120)) as client:
         res = await client.post(
             "https://api.openai.com/v1/images/generations",
@@ -63,10 +65,12 @@ async def generate_image_and_upload(prompt: str) -> dict:
             img_res.raise_for_status()
             png_bytes = img_res.content
 
+    # S3에 업로드, URL 반환
     s3_url = upload_image_to_s3(png_bytes, content_type)
 
     logger.info("✅ S3 업로드 성공 → %s", s3_url)
 
+    # 생성된 이미지의 메타데이터 반환
     return {
         "filename": filename,
         "originalFilename": original_filename,
@@ -75,7 +79,7 @@ async def generate_image_and_upload(prompt: str) -> dict:
         "pullPrompt": prompt  # setter 가능한 필드
     }
 
-
+# 테이블 Id를 받아, 프롬프트 완성 및 generate_image_and_upload() 호출
 async def build_and_generate_image(
     db: AsyncSession,
     floor_plan_id: int,

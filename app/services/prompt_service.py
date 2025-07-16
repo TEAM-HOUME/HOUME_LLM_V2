@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ────────────────────────────────────────────────────────────────
 # 1) PromptTemplate 정의
 #    - input_variables: 템플릿에서 {name} 으로 참조할 변수들
-#    - template: 네 줄로 구성된 최종 문자열 포맷
+#    - template: 입력된 프롬프트를 줄바꿈으로 이어 붙임
 # ────────────────────────────────────────────────────────────────
 PROMPT_TMPL = PromptTemplate(
     input_variables=[
@@ -48,6 +48,7 @@ PROMPT_TMPL = PromptTemplate(
 #    - 모든 DB I/O를 await 로 수행 → FastAPI 엔드포인트에서 await 호출
 #    - Java Spring 의 PromptServiceImpl.makePrompt() 역할
 # ────────────────────────────────────────────────────────────────
+# DB의 Id를 받아, 해당하는 프롬프트를 합쳐서 반환함
 async def build_prompt(
     db: AsyncSession,
     floor_plan_id: int,
