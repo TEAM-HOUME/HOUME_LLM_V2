@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.db.session import get_db
 from app.models.enums import Equilibrium
-from app.services.image_service import build_and_generate_image
+from app.services.image_service import build_image_chain
 
 router = APIRouter(prefix="/images", tags=["Image"])   # ← 중복 import 제거
 
@@ -28,7 +28,7 @@ async def create_image(
     body: ImageRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    return await build_and_generate_image(  # image_service의 함수 호출
+    return await build_image_chain(  # image_service의 함수 호출
         db=db,
         floor_plan_id=body.floorPlanId,
         equilibrium=body.equilibrium,

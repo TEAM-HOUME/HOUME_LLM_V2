@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     # 기본값은 **로컬 개발** 기준 (실제 서비스는 .env 로 덮어씀)
     POSTGRES_USER: str = "root"
-    POSTGRES_PASSWORD: str | None = "rnqhsxkr2633"
+    POSTGRES_PASSWORD: str | None = "root"
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int | None = 5432
     POSTGRES_DB: str | None = "postgres"
