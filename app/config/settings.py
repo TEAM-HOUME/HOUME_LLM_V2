@@ -1,5 +1,10 @@
 # app/config/settings.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from langchain_teddynote import logging
+from dotenv import load_dotenv
+
+load_dotenv()
+logging.langsmith("Houme")
 
 class Settings(BaseSettings):
 
@@ -7,6 +12,10 @@ class Settings(BaseSettings):
 
     # ── OpenAI ─────────────────────────
     OPENAI_API_KEY: str
+    LANGSMITH_TRACING_V2: str
+    LANGSMITH_ENDPOINT: str
+    LANGSMITH_API_KEY: str
+    LANGSMITH_PROJECT: str
 
     # ── Postgres ───────────────────────
     POSTGRES_USER: str
@@ -19,7 +28,7 @@ class Settings(BaseSettings):
 
     OPENAI_IMAGE_MODEL: str = "gpt-image-1"
     OPENAI_IMAGE_N: int = 1
-    OPENAI_IMAGE_SIZE: str = "1024x1024"
+    OPENAI_IMAGE_SIZE: str = "1536x1024"  # 3:2 비율
     OPENAI_IMAGE_QUALITY: str = "medium"
     OPENAI_IMAGE_BACKGROUND: str = "auto"
     OPENAI_IMAGE_OUTPUT_FORMAT: str = "b64_json"  # "b64_json" or "url"
