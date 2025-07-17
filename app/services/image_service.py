@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.enums import Equilibrium
 from typing import Sequence
 import uuid, base64, httpx
+from app.utils.CLIPScore import calculate_clip_score
 
 
 # 1. 이미지 생성 함수 (LangChain용)
@@ -41,12 +42,14 @@ def process_and_upload(png_bytes: bytes, prompt: str) -> dict:
     content_type = "image/png"
 
     s3_url = upload_image_to_s3(png_bytes, content_type)
+    clip_score = calculate_clip_score(png_bytes, prompt)
 
     return {
         "filename": filename,
         "originalFilename": f"{uid}.png",
         "imageLink": s3_url,
         "contentType": content_type,
+        "clipScore": clip_score,
         "pullPrompt": prompt
     }
 
