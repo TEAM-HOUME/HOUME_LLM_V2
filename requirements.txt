@@ -13,5 +13,5 @@ pydantic_settings==2.10.1
 python-dotenv==1.1.1
 SQLAlchemy==2.0.41
 
---find-links https://download.pytorch.org/whl/torch_stable.html
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.7.1
