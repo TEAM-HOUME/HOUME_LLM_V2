@@ -90,3 +90,4 @@ async def list_user_ids(db: AsyncSession = Depends(get_db)):
     User = AutomapBase.classes.users
     res = await db.execute(select(User.id))
     return [row.id for row in res]
+
