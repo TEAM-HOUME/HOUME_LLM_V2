@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 가상환경
+.venv/
+venv/
+
+# IDE
+*.vscode/
+.idea/
+
+# OS or Misc
+.DS_Store
+*.log

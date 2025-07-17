@@ -1,8 +1,8 @@
-FROM python:3.10-slim
+# Stage 1: 빌드 & 의존성 설치
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# 시스템 의존성 설치 + requirements 설치
 COPY requirements.txt .
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -11,14 +11,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     libffi-dev \
     curl \
-    && pip install --no-cache-dir -r requirements.txt \
-    && apt-get purge -y --auto-remove \
+    poppler-utils \
+ && pip install --upgrade pip setuptools wheel cython build \
+ && pip install numpy \
+ && pip install --no-cache-dir -r requirements.txt \
+ && apt-get purge -y --auto-remove \
     build-essential \
     gcc \
     libpq-dev \
     libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*
 
+
+# Stage 2: 실행 환경용 경량 이미지
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY --from=builder /usr/local /usr/local
 COPY . .
 
 EXPOSE 8000

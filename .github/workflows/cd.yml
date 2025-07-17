@@ -1,0 +1,63 @@
+name: Houme_LLM_CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Docker Login & Build & Push
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build --platform linux/amd64 -t ${{ secrets.DOCKER_REPO }} .
+          docker push ${{ secrets.DOCKER_REPO }}
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: ${{ secrets.KEY }}
+          script: |
+            cd ~/houme-llm-deploy || mkdir ~/houme-llm-deploy && cd ~/houme-llm-deploy
+
+            # ⬇️ .env 파일 작성
+            echo "${{ secrets.ENV_FILE }}" > .env
+
+            docker ps -q --filter "name=houme-llm" | grep -q . && docker stop houme-llm && docker rm houme-llm || true
+            docker pull ${{ secrets.DOCKER_REPO }}
+
+            docker run -d \
+              --name houme-llm \
+              -p 80:8000 \
+              --env-file .env \
+              ${{ secrets.DOCKER_REPO }}
+
+            docker image prune -f
