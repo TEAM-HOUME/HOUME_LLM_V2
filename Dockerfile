@@ -14,14 +14,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils \
  && pip install --upgrade pip setuptools wheel cython build \
  && pip install numpy \
- && pip install --no-cache-dir -r requirements.txt \
+ && pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu \
  && apt-get purge -y --auto-remove \
     build-essential \
     gcc \
     libpq-dev \
     libffi-dev \
  && rm -rf /var/lib/apt/lists/*
-
 
 # Stage 2: 실행 환경용 경량 이미지
 FROM python:3.11-slim
