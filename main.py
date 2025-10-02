@@ -22,6 +22,7 @@ from app.db.session import engine, get_db
 from app.db.automap import AutomapBase, init_automap
 from app.api.routers import image_router
 from app.api import prompt
+from app.api import imagehash
 
 # ──────────────────────────
 # 0) 로깅 기본 설정
@@ -71,7 +72,8 @@ async def on_startup() -> None:
 # 4) API 라우터 등록
 # ──────────────────────────
 app.include_router(image_router.router)  # POST /images
-app.include_router(prompt.router)
+app.include_router(prompt.router)  # POST /prompts/compose
+app.include_router(imagehash.router)  # POST /imagehash/similarity
 
 # ──────────────────────────
 # 5) 데모 엔드포인트 (users)
