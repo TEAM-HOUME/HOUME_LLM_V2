@@ -209,7 +209,7 @@ async def calculate_top_k_similar_images(
         
         for idx, product in enumerate(products, start=1):
             try:
-                logger.info(f"  [{idx}/{len(products)}] 처리 중: {product.name}")
+                logger.info(f"  [{idx}/{len(products)}] 처리 중: productId={product.productId}")
                 
                 # 상품 이미지 다운로드
                 product_image = await download_image(product.imageUrl)
@@ -228,10 +228,8 @@ async def calculate_top_k_similar_images(
                 # 결과 저장 (소수점 4자리까지)
                 ranked_products.append(
                     RankedProduct(
+                        productId=int(product.productId),
                         imageUrl=product.imageUrl,
-                        siteUrl=product.siteUrl,
-                        name=product.name,
-                        mallName=product.mallName,
                         similarity=round(similarity, 4)
                     )
                 )
@@ -240,13 +238,11 @@ async def calculate_top_k_similar_images(
                 
             except Exception as e:
                 # 개별 상품 처리 실패 시 유사도 0.0으로 처리하고 계속 진행
-                logger.error(f"    ✗ 상품 처리 실패 ({product.name}): {str(e)}")
+                logger.error(f"    ✗ 상품 처리 실패 (productId={getattr(product, 'productId', 'N/A')}): {str(e)}")
                 ranked_products.append(
                     RankedProduct(
+                        productId=int(getattr(product, 'productId', 0)) if getattr(product, 'productId', None) is not None else 0,
                         imageUrl=product.imageUrl,
-                        siteUrl=product.siteUrl,
-                        name=product.name,
-                        mallName=product.mallName,
                         similarity=0.0
                     )
                 )
@@ -264,7 +260,7 @@ async def calculate_top_k_similar_images(
         
         logger.info(f"✓ 완료: 상위 {len(top_products)}개 상품 반환")
         for idx, product in enumerate(top_products, start=1):
-            logger.info(f"  {idx}위. {product.name} (유사도: {product.similarity:.4f})")
+            logger.info(f"  {idx}위. productId={product.productId} (유사도: {product.similarity:.4f})")
         
         return top_products
         

@@ -13,9 +13,7 @@ class Product(BaseModel):
     Spring의 ImageHashRequest.Product와 매핑
     """
     imageUrl: str = Field(..., description="상품 이미지 URL")
-    siteUrl: str = Field(..., description="상품 페이지 URL")
-    name: str = Field(..., description="상품명")
-    mallName: str = Field(..., description="쇼핑몰명")
+    productId: int = Field(..., description="상품 식별자 (Long)")
 
 
 class ImageHashRequest(BaseModel):
@@ -34,15 +32,11 @@ class ImageHashRequest(BaseModel):
                 "products": [
                     {
                         "imageUrl": "https://picsum.photos/400/300?random=1",
-                        "siteUrl": "https://example.com/product/1",
-                        "name": "모던 소파",
-                        "mallName": "가구몰"
+                        "productId": 1001
                     },
                     {
                         "imageUrl": "https://picsum.photos/400/300?random=2",
-                        "siteUrl": "https://example.com/product/2",
-                        "name": "클래식 소파",
-                        "mallName": "인테리어샵"
+                        "productId": 1002
                     }
                 ]
             }
@@ -54,10 +48,8 @@ class RankedProduct(BaseModel):
     유사도가 계산된 상품 정보
     Spring의 SimilarityResponse.RankedProduct와 매핑
     """
+    productId: int = Field(..., description="상품 식별자 (Long)")
     imageUrl: str = Field(..., description="상품 이미지 URL")
-    siteUrl: str = Field(..., description="상품 페이지 URL")
-    name: str = Field(..., description="상품명")
-    mallName: str = Field(..., description="쇼핑몰명")
     similarity: float = Field(..., ge=0.0, le=1.0, description="유사도 점수 (0.0 ~ 1.0, 높을수록 유사)")
 
 
@@ -75,17 +67,13 @@ class SimilarityResponse(BaseModel):
             "example": {
                 "rankedProducts": [
                     {
+                        "productId": 1001,
                         "imageUrl": "https://picsum.photos/400/300?random=1",
-                        "siteUrl": "https://example.com/product/1",
-                        "name": "모던 소파",
-                        "mallName": "가구몰",
                         "similarity": 0.9234
                     },
                     {
+                        "productId": 1002,
                         "imageUrl": "https://picsum.photos/400/300?random=2",
-                        "siteUrl": "https://example.com/product/2",
-                        "name": "클래식 소파",
-                        "mallName": "인테리어샵",
                         "similarity": 0.8756
                     }
                 ]
