@@ -8,8 +8,16 @@ POST /imagehash/similarity - 이미지 유사도 계산 및 상위 5개 상품 �
 import logging
 from fastapi import APIRouter, HTTPException, status
 
-from app.models.imagehash_dto import ImageHashRequest, SimilarityResponse, RankedProduct
-from app.services.imagehash_service import calculate_top_k_similar_images
+from app.models.imagehash_dto import (
+    ImageHashRequest,
+    SimilarityResponse,
+    ImageHashRequestForPlan,
+    SimilarityResponseForPlan,
+)
+from app.services.imagehash_service import (
+    calculate_top_k_similar_images,
+    calculate_top_k_similar_images_for_plan,
+)
 
 # 라우터 설정
 router = APIRouter(
@@ -99,4 +107,54 @@ async def get_top_k_similar_images(request: ImageHashRequest) -> SimilarityRespo
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"이미지 유사도 계산 중 오류가 발생했습니다: {str(e)}"
+        )
+
+
+@router.post(
+    "/similarity/for-plan",
+    response_model=SimilarityResponseForPlan,
+    summary="이미지 유사도 계산 (for-plan 가중치 기반)",
+    description="""
+    기획/의사결정용: 외부에서 전달된 pHash/colorHash 가중치(0~100, 합 100 권장)를 정규화하여 반영
+    
+    - pHash 가중치와 colorHash 가중치 합을 기준으로 비율화하여 유사도 산정에 적용합니다.
+    - 상위 5개의 상품을 유사도 순으로 반환합니다.
+    """,
+    status_code=status.HTTP_200_OK,
+)
+async def get_top_k_similar_images_for_plan(request: ImageHashRequestForPlan) -> SimilarityResponseForPlan:
+    try:
+        # 요청 검증
+        if not request.baseImageUrl:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="baseImageUrl은 필수입니다",
+            )
+        if not request.products or len(request.products) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="products는 최소 1개 이상이어야 합니다",
+            )
+
+        logger.info(
+            f"[for-plan] 유사도 계산 요청 - 기준 이미지: {request.baseImageUrl}, 상품 수: {len(request.products)}, "
+            f"pHash={request.pHash}, colorHash={request.colorHash}"
+        )
+
+        ranked_products = await calculate_top_k_similar_images_for_plan(
+            base_image_url=request.baseImageUrl,
+            products=request.products,
+            p_weight=request.pHash,
+            c_weight=request.colorHash,
+        )
+
+        return SimilarityResponseForPlan(rankedProducts=ranked_products)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"유사도 계산 중 오류 발생 (for-plan): {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"이미지 유사도 계산(for-plan) 중 오류가 발생했습니다: {str(e)}",
         )

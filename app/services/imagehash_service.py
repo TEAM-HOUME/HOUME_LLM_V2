@@ -12,7 +12,7 @@ from PIL import Image
 import imagehash
 import httpx
 
-from app.models.imagehash_dto import Product, RankedProduct
+from app.models.imagehash_dto import Product, RankedProduct, RankedProductForPlan
 
 logger = logging.getLogger(__name__)
 
@@ -266,4 +266,84 @@ async def calculate_top_k_similar_images(
         
     except Exception as e:
         logger.error(f"✗ 이미지 유사도 계산 실패: {str(e)}", exc_info=True)
+        raise
+
+
+async def calculate_top_k_similar_images_for_plan(
+    base_image_url: str,
+    products: List[Product],
+    p_weight: int,
+    c_weight: int,
+) -> List[RankedProductForPlan]:
+    """
+    for-plan: 외부에서 전달된 가중치(p_weight, c_weight; 0~100)를 사용해 유사도 계산
+
+    - 가중치 합계를 기준으로 정규화하여 비율로 사용
+      - total <= 0 인 경우, 디폴트 70:30 적용
+    - 상위 5개 반환
+    """
+    try:
+        # 1) 기준 이미지 다운로드 및 해시 계산
+        logger.info(f"[for-plan 1/4] 기준 이미지 다운로드 중: {base_image_url}")
+        base_image = await download_image(base_image_url)
+        base_phash, base_color_hash = calculate_combined_hash(base_image)
+        logger.info(f"  → pHash: {base_phash}")
+        logger.info(f"  → colorHash: {base_color_hash}")
+
+        # 2) 가중치 정규화
+        total = max(0, int(p_weight)) + max(0, int(c_weight))
+        if total <= 0:
+            p_ratio, c_ratio = 0.7, 0.3
+        else:
+            p_ratio = max(0.0, min(1.0, int(p_weight) / total))
+            c_ratio = max(0.0, min(1.0, int(c_weight) / total))
+        logger.info(f"[for-plan] 가중치 비율 pHash={p_ratio:.3f}, colorHash={c_ratio:.3f}")
+
+        # 3) 각 상품 처리
+        ranked_products: List[RankedProductForPlan] = []
+        for idx, product in enumerate(products, start=1):
+            try:
+                logger.info(f"  [for-plan {idx}/{len(products)}] productId={product.productId}")
+                product_image = await download_image(product.imageUrl)
+                product_phash, product_color_hash = calculate_combined_hash(product_image)
+
+                # 각각의 유사도
+                phash_similarity = calculate_hash_similarity(base_phash, product_phash)
+                color_similarity = calculate_hash_similarity(base_color_hash, product_color_hash)
+
+                # 외부 가중치 비율 적용
+                similarity = p_ratio * phash_similarity + c_ratio * color_similarity
+
+                ranked_products.append(
+                    RankedProductForPlan(
+                        productId=int(product.productId),
+                        imageUrl=product.imageUrl,
+                        similarity=round(similarity, 4),
+                    )
+                )
+                logger.info(f"    ✓ 유사도(for-plan): {similarity:.4f}")
+            except Exception as e:
+                logger.error(
+                    f"    ✗ 상품 처리 실패(for-plan) (productId={getattr(product, 'productId', 'N/A')}): {str(e)}"
+                )
+                ranked_products.append(
+                    RankedProductForPlan(
+                        productId=int(getattr(product, 'productId', 0)) if getattr(product, 'productId', None) is not None else 0,
+                        imageUrl=product.imageUrl,
+                        similarity=0.0,
+                    )
+                )
+
+        # 4) 정렬 및 상위 K개 반환 (기획용도 상위 5개로 제한)
+        ranked_products.sort(key=lambda x: x.similarity, reverse=True)
+        top_products = ranked_products[:TOP_K]
+
+        logger.info(f"[for-plan] 완료: 상위 {len(top_products)}개 상품 반환")
+        for idx, product in enumerate(top_products, start=1):
+            logger.info(f"  {idx}위. productId={product.productId} (유사도: {product.similarity:.4f})")
+
+        return top_products
+
+    except Exception as e:
+        logger.error(f"✗ 이미지 유사도 계산 실패(for-plan): {str(e)}", exc_info=True)
         raise

@@ -12,6 +12,7 @@ class Product(BaseModel):
     비교 대상 상품 정보
     Spring의 ImageHashRequest.Product와 매핑
     """
+
     imageUrl: str = Field(..., description="상품 이미지 URL")
     productId: int = Field(..., description="상품 식별자 (Long)")
 
@@ -32,12 +33,82 @@ class ImageHashRequest(BaseModel):
                 "products": [
                     {
                         "imageUrl": "https://picsum.photos/400/300?random=1",
-                        "productId": 1001
+                        "productId": 1001,
                     },
                     {
                         "imageUrl": "https://picsum.photos/400/300?random=2",
-                        "productId": 1002
-                    }
+                        "productId": 1002,
+                    },
+                ],
+            }
+        }
+
+
+# ─────────────────────────────────────────────────────────────
+# for-plan 전용 DTO (가중치 입력)
+class ImageHashRequestForPlan(BaseModel):
+    """
+    기획/의사결정 용 유사도 계산 요청 DTO
+    - pHash, colorHash 가중치를 0~100 범위 정수로 입력
+    - 입력 값 합이 0이거나 매우 작으면 디폴트(0.7/0.3)로 보정
+    """
+
+    baseImageUrl: str = Field(..., description="기준 이미지 URL")
+    products: List[Product] = Field(..., description="비교할 상품 목록")
+    pHash: int = Field(..., ge=0, le=100, description="pHash 가중치 (0~100)")
+    colorHash: int = Field(..., ge=0, le=100, description="colorHash 가중치 (0~100)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "baseImageUrl": "https://picsum.photos/400/300",
+                "products": [
+                    {
+                        "imageUrl": "https://picsum.photos/400/300?random=1",
+                        "productId": 1001,
+                    },
+                    {
+                        "imageUrl": "https://picsum.photos/400/300?random=2",
+                        "productId": 1002,
+                    },
+                ],
+                "pHash": 70,
+                "colorHash": 30,
+            }
+        }
+
+
+class RankedProductForPlan(BaseModel):
+    """
+    for-plan 응답용 랭킹 아이템 (동일 스펙 유지)
+    """
+
+    productId: int = Field(..., description="상품 식별자 (Long)")
+    imageUrl: str = Field(..., description="상품 이미지 URL")
+    similarity: float = Field(..., ge=0.0, le=1.0)
+
+
+class SimilarityResponseForPlan(BaseModel):
+    """
+    for-plan 응답 DTO
+    """
+
+    rankedProducts: List[RankedProductForPlan]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "rankedProducts": [
+                    {
+                        "productId": 1001,
+                        "imageUrl": "https://picsum.photos/400/300?random=1",
+                        "similarity": 0.91,
+                    },
+                    {
+                        "productId": 1002,
+                        "imageUrl": "https://picsum.photos/400/300?random=2",
+                        "similarity": 0.88,
+                    },
                 ]
             }
         }
@@ -48,9 +119,12 @@ class RankedProduct(BaseModel):
     유사도가 계산된 상품 정보
     Spring의 SimilarityResponse.RankedProduct와 매핑
     """
+
     productId: int = Field(..., description="상품 식별자 (Long)")
     imageUrl: str = Field(..., description="상품 이미지 URL")
-    similarity: float = Field(..., ge=0.0, le=1.0, description="유사도 점수 (0.0 ~ 1.0, 높을수록 유사)")
+    similarity: float = Field(
+        ..., ge=0.0, le=1.0, description="유사도 점수 (0.0 ~ 1.0, 높을수록 유사)"
+    )
 
 
 class SimilarityResponse(BaseModel):
@@ -59,7 +133,10 @@ class SimilarityResponse(BaseModel):
     Spring의 SimilarityResponse와 매핑
     유사도가 높은 순으로 정렬된 상위 5개 상품 반환
     """
-    rankedProducts: List[RankedProduct] = Field(..., description="유사도 순으로 정렬된 상품 목록 (최대 5개)")
+
+    rankedProducts: List[RankedProduct] = Field(
+        ..., description="유사도 순으로 정렬된 상품 목록 (최대 5개)"
+    )
 
     class Config:
         # Swagger UI에 표시될 예시 데이터
@@ -69,13 +146,13 @@ class SimilarityResponse(BaseModel):
                     {
                         "productId": 1001,
                         "imageUrl": "https://picsum.photos/400/300?random=1",
-                        "similarity": 0.9234
+                        "similarity": 0.9234,
                     },
                     {
                         "productId": 1002,
                         "imageUrl": "https://picsum.photos/400/300?random=2",
-                        "similarity": 0.8756
-                    }
+                        "similarity": 0.8756,
+                    },
                 ]
             }
         }
